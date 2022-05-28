@@ -60,7 +60,7 @@ def classify_imgae(im):
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'memcached'
 app.config['SECRET_KEY'] = 'super secret key'
-app.config['UPLOAD_FOLDER'] = 'faces'
+app.config['UPLOAD_FOLDER'] = './faces'
 
 
 @app.route("/")
@@ -68,49 +68,6 @@ app.config['UPLOAD_FOLDER'] = 'faces'
 def home():
     return render_template('home.html')
 
-
-@app.route("/student_login_old", methods=['GET', 'POST'])
-def student_login_old():
-    flag = 0
-    if (request.method == 'POST'):
-        uname = request.form.get('uname')
-        pwd = request.form.get('password')
-
-        print(f'Received from front end : uname : {uname}, pwd : {pwd}')
-
-        try:
-
-            db = pymysql.connect(host='127.0.0.1',
-                                 user='root',
-                                 password='admin',
-                                 db='facerecognition',
-                                 autocommit=True)
-            cursor = db.cursor()
-            # q1 = "SELECT * FROM students NATURAL JOIN stud_reg_courses WHERE reg_no=%s"
-            # q1 = "SELECT * FROM students NATURAL JOIN students WHERE reg_no=%s"
-            q1 = "SELECT * FROM students WHERE reg_no=%s"
-            cursor.execute(q1, (uname))
-            global results
-            results = cursor.fetchall()
-            print(results)
-            db.close()
-            if (pwd == results[0][4]):
-                session['username'] = uname
-
-                return render_template('take_attendance.html', results=results)
-
-            else:
-                return "Incorrect password"
-
-        except Exception as e:
-            print(traceback.format_exc())
-            flag = 0
-            print("NO results found!")
-            print(e)
-
-    else:
-        return "Please Sign Up First"
-    return "PLEASE SIGN UP FIRST!!"
 
 
 @app.route("/student_login", methods=['GET', 'POST'])
@@ -124,7 +81,7 @@ def student_login():
 
         try:
 
-            connection = pymysql.connect(host='127.0.0.1',
+            connection = pymysql.connect(host='localhost',
                                          user='root',
                                          password='admin',
                                          db='facerecognition',
@@ -172,8 +129,8 @@ def student_signup():
     try:
         db = pymysql.connect(host='localhost',
                              user='root',
-                             password='',
-                             db='project')
+                             password='admin',
+                             db='facerecognition')
         if (request.method == 'POST'):
             reg_no = request.form.get('reg_no')
             name = request.form.get('name')
@@ -215,18 +172,22 @@ def student_signup():
 
 @app.route("/attendance")
 def attendance():
-    os.system('python take_pic.py')
-    attndee = classify_imgae("test.jpg")
-    attndee = attndee[0:9]
-    current_time = datetime.datetime.now()
-    time = current_time.hour + current_time.minute
-    workbook = xlsxwriter.Workbook('attendance_sheet.xlsx')
-    worksheet = workbook.add_worksheet()
-    worksheet.write('A1', 'reg_no')
-    worksheet.write('B1', 'time')
-    worksheet.write('A2', attndee)
-    worksheet.write('B2', current_time)
-    workbook.close()
+    try:
+
+        os.system('python take_pic.py')
+        attndee = classify_imgae("test.jpg")
+        attndee = attndee[0:9]
+        current_time = datetime.datetime.now()
+        time = current_time.hour + current_time.minute
+        workbook = xlsxwriter.Workbook('attendance_sheet.xlsx')
+        worksheet = workbook.add_worksheet()
+        worksheet.write('A1', 'reg_no')
+        worksheet.write('B1', 'time')
+        worksheet.write('A2', attndee)
+        worksheet.write('B2', current_time)
+        workbook.close()
+    except Exception as e:
+        print(e)
 
     return render_template('take_attendance.html', attndee=attndee)
 

@@ -14,7 +14,6 @@ CREATE TABLE `students` (
   `name` varchar(20) NOT NULL,
   `email` varchar(30) NOT NULL,
   `contact_no` varchar(10) NOT NULL,
-  --`college` varchar(15) NOT NULL,
   `password` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -23,9 +22,6 @@ INSERT INTO `students` (`reg_no`, `name`, `email`, `contact_no`, `password`) VAL
 ('2020ITB050', 'Shreyoshi', 'shreyoshi5000@gmail.com', '9831661386', 'test');
 
 
---
--- Indexes for table `students`
---
 ALTER TABLE `students`
   ADD PRIMARY KEY (`reg_no`);
 
