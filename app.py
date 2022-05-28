@@ -9,6 +9,8 @@ from time import sleep
 import datetime
 from werkzeug.utils import secure_filename
 import xlsxwriter
+import traceback
+
 
 def get_encoded_faces():
     encoded = {}
@@ -55,7 +57,6 @@ def classify_imgae(im):
         return face_names
 
 
-
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'memcached'
 app.config['SECRET_KEY'] = 'super secret key'
@@ -68,36 +69,94 @@ def home():
     return render_template('home.html')
 
 
-@app.route("/student_login", methods=['GET', 'POST'])
-def student_login():
+@app.route("/student_login_old", methods=['GET', 'POST'])
+def student_login_old():
     flag = 0
     if (request.method == 'POST'):
         uname = request.form.get('uname')
         pwd = request.form.get('password')
 
+        print(f'Received from front end : uname : {uname}, pwd : {pwd}')
+
         try:
 
-            db = pymysql.connect(host='localhost',
+            db = pymysql.connect(host='127.0.0.1',
                                  user='root',
-                                 password='',
-                                 db='project',
+                                 password='admin',
+                                 db='facerecognition',
                                  autocommit=True)
             cursor = db.cursor()
-            q1 = "SELECT * FROM students NATURAL JOIN stud_reg_courses WHERE reg_no=%s"
+            # q1 = "SELECT * FROM students NATURAL JOIN stud_reg_courses WHERE reg_no=%s"
+            # q1 = "SELECT * FROM students NATURAL JOIN students WHERE reg_no=%s"
+            q1 = "SELECT * FROM students WHERE reg_no=%s"
             cursor.execute(q1, (uname))
             global results
             results = cursor.fetchall()
             print(results)
             db.close()
-            if (pwd == results[0][5]):
+            if (pwd == results[0][4]):
                 session['username'] = uname
 
                 return render_template('take_attendance.html', results=results)
 
             else:
-               return "Incorrect password"
+                return "Incorrect password"
 
         except Exception as e:
+            print(traceback.format_exc())
+            flag = 0
+            print("NO results found!")
+            print(e)
+
+    else:
+        return "Please Sign Up First"
+    return "PLEASE SIGN UP FIRST!!"
+
+
+@app.route("/student_login", methods=['GET', 'POST'])
+def student_login():
+    flag = 0
+    if (request.method == 'POST'):
+        uname = str(request.form.get('uname'))
+        pwd = str(request.form.get('password'))
+
+        print(f'Received from front end : uname : {uname}, pwd : {pwd}')
+
+        try:
+
+            connection = pymysql.connect(host='127.0.0.1',
+                                         user='root',
+                                         password='admin',
+                                         db='facerecognition',
+                                         # charset='utf8mb4',
+                                         # cursorclass=pymysql.cursors.DictCursor,
+                                         autocommit=True)
+
+            with connection:
+
+                with connection.cursor() as cursor:
+                    # Read single student record
+                    # only reg_no we have in db : 2020ITB05
+                    # sql = "SELECT `password` FROM `students` WHERE `reg_no`=%s"
+                    sql = "SELECT * FROM `students` WHERE `reg_no`=%s"
+
+                    cursor.execute(sql, (uname,))
+                    result = cursor.fetchone()
+                    print(f'result from database :  {result}')
+                    # pwd_db = result['password']
+                    pwd_db = result[4]
+
+            if pwd == pwd_db:
+
+                session['username'] = uname
+
+                return render_template('take_attendance.html', results=result)
+
+            else:
+                return "Incorrect password"
+
+        except Exception as e:
+            print(traceback.format_exc())
             flag = 0
             print("NO results found!")
             print(e)
@@ -152,9 +211,6 @@ def student_signup():
         print(e)
 
     return "not done"
-
-
-
 
 
 @app.route("/attendance")
